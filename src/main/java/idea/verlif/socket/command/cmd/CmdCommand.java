@@ -14,7 +14,9 @@ import java.nio.charset.Charset;
  * @version 1.0
  * @date 2022/2/11 14:24
  */
-public class CmdCommand implements SocketCommand {
+public class CmdCommand implements SocketCommand<CmdConfig> {
+
+    private CmdConfig cmdConfig;
 
     @Override
     public String[] keys() {
@@ -22,9 +24,15 @@ public class CmdCommand implements SocketCommand {
     }
 
     @Override
+    public void onLoad(CmdConfig cmdConfig) {
+        this.cmdConfig = cmdConfig;
+    }
+
+    @Override
     public void run(ClientHolder.ClientHandler clientHandler, String s) {
         try {
-            Process p = Runtime.getRuntime().exec("cmd.exe /c " + s);
+            ProcessBuilder pb = new ProcessBuilder();
+            Process p = pb.directory(cmdConfig.getWorkFile()).command("cmd.exe", "/c", s).start();
             InputStream inStream = p.getInputStream();
             InputStreamReader inReader = new InputStreamReader(inStream, Charset.forName("GBK"));
             BufferedReader inBuffer = new BufferedReader(inReader);
@@ -33,6 +41,7 @@ public class CmdCommand implements SocketCommand {
                 clientHandler.sendMessage(out);
             }
             inStream.close();
+            p.destroy();
         } catch (IOException e) {
             clientHandler.sendMessage(e.getMessage());
         }
